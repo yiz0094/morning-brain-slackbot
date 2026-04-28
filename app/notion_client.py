@@ -89,8 +89,6 @@ def create_task(
         "중요/긴급": {"select": {"name": "5. 습관 / 루틴"}},
         "날짜": {"date": {"start": today.isoformat()}},
         "소요시간(분)": {"number": 10},
-        "프로젝트": {"relation": [{"id": config.NOTION_PROJECT_PAGE_ID}]},
-        "박스": {"relation": [{"id": config.NOTION_BOX_PAGE_ID}]},
     }
 
     children: list[dict[str, Any]] = [
