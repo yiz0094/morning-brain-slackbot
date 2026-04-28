@@ -4,7 +4,7 @@ from __future__ import annotations
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Header, Request, Response
 from slack_bolt import App
 from slack_bolt.adapter.fastapi import SlackRequestHandler
 
@@ -56,3 +56,12 @@ def health():
         "pool_index": storage.get_last_pool_index(),
         "today_pending": len(storage.get_today_pending_sessions()),
     }
+
+
+@app.post("/trigger")
+async def trigger_endpoint(x_trigger_key: str = Header(default="")):
+    """수동 운동 트리거. SLACK_SIGNING_SECRET을 키로 재사용."""
+    if x_trigger_key != config.SLACK_SIGNING_SECRET:
+        return Response(status_code=401)
+    posted = scheduler.trigger_morning_exercise(force=True)
+    return {"posted": posted}
