@@ -39,6 +39,8 @@ def validate() -> None:
         "BRAIN_CHANNEL_ID": BRAIN_CHANNEL_ID,
         "OWNER_USER_ID": OWNER_USER_ID,
         "NOTION_TOKEN": NOTION_TOKEN,
+        "NOTION_PROJECT_PAGE_ID": NOTION_PROJECT_PAGE_ID,
+        "NOTION_BOX_PAGE_ID": NOTION_BOX_PAGE_ID,
         "NOTION_TASKS_DATA_SOURCE_ID": NOTION_TASKS_DATA_SOURCE_ID,
     }
     missing = [k for k, v in required.items() if not v]
