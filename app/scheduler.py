@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import date, timedelta
+from datetime import date
 from typing import Any, Optional
 
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -10,14 +10,12 @@ from apscheduler.triggers.cron import CronTrigger
 from pytz import timezone
 
 from . import config, exercises, notion_client, storage
-from .models import STATUS_COMPLETED, STATUS_SKIPPED
 
 log = logging.getLogger(__name__)
 
 _KST = timezone(config.TIMEZONE)
 _scheduler: Optional[BackgroundScheduler] = None
 _slack_client: Any = None  # WebClient (런타임 주입)
-
 
 _WEEKDAY_KR = ["월", "화", "수", "목", "금", "토", "일"]
 
@@ -43,11 +41,6 @@ def setup(slack_client: Any) -> None:
         CronTrigger(day_of_week="mon-fri", hour=12, minute=0, timezone=_KST),
         id="reminder",
     )
-    _scheduler.add_job(
-        trigger_weekly_report,
-        CronTrigger(day_of_week="sun", hour=23, minute=0, timezone=_KST),
-        id="weekly_report",
-    )
     _scheduler.start()
     log.info(
         "Scheduler started, jobs: %s",
@@ -63,7 +56,7 @@ def shutdown() -> None:
 def trigger_morning_exercise(force: bool = False) -> bool:
     """오늘 운동 생성 → 노션 + 슬랙 포스트.
 
-    토/일이거나 cap 초과면 False. force=True면 cap만 우회 (요일은 그대로 X).
+    토/일이거나 cap 초과면 False. force=True면 cap 우회.
     """
     today = date.today()
 
@@ -83,7 +76,6 @@ def trigger_morning_exercise(force: bool = False) -> bool:
         today=today, exercise_type=ex.type, exercise_content=content,
     )
 
-    # Notion (실패해도 흐름 안 끊고 큐에 적재)
     notion_url: Optional[str] = None
     try:
         page_id, notion_url = notion_client.create_task(
@@ -106,7 +98,6 @@ def trigger_morning_exercise(force: bool = False) -> bool:
             },
         )
 
-    # Slack
     weekday_kr = _WEEKDAY_KR[today.weekday()]
     notion_line = (
         f"📝 노션: <{notion_url}|Task 페이지>"
@@ -144,44 +135,3 @@ def trigger_reminder() -> None:
             text="여유 될 때 답해주세요 🌱",
         )
         storage.mark_reminded(s.id)
-
-
-def trigger_weekly_report() -> None:
-    """일요일 23시: OWNER에게 DM."""
-    today = date.today()
-    # 그 주 월요일 (일=오늘이면 -6)
-    week_start = today - timedelta(days=6)
-
-    completed = skipped = missed = 0
-    longest_day: Optional[date] = None
-    longest_len = -1
-    for i in range(5):  # 월~금 5일
-        d = week_start + timedelta(days=i)
-        s = storage.get_session_by_date(d)
-        if not s:
-            missed += 1
-        elif s.status == STATUS_COMPLETED:
-            completed += 1
-            ans_len = len(s.answer or "")
-            if ans_len > longest_len:
-                longest_len = ans_len
-                longest_day = d
-        elif s.status == STATUS_SKIPPED:
-            skipped += 1
-        else:
-            missed += 1
-
-    end = week_start + timedelta(days=4)
-    lines = [
-        f"📊 *{week_start.isoformat()} ~ {end.isoformat()} 주간 리포트*",
-        f"✅ 완료 {completed} / ⏭ 스킵 {skipped} / ⬛ 미응답 {missed}",
-    ]
-    if longest_day:
-        lines.append(
-            f"🌊 가장 깊이 들어간 날: {longest_day} ({longest_len}자)"
-        )
-    lines.append("\n다음 주도 한 회씩 천천히 가요 🌿")
-
-    _slack_client.chat_postMessage(
-        channel=config.BRAIN_CHANNEL_ID, text="\n".join(lines),
-    )

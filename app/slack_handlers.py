@@ -1,6 +1,8 @@
 """슬랙 메시지/슬래시 커맨드 핸들러 등록."""
 from __future__ import annotations
 
+from datetime import datetime
+
 from slack_bolt import App
 
 from . import config, exercises, notion_client, storage
@@ -10,7 +12,7 @@ from .models import STATUS_PENDING
 def register(app: App) -> None:
     """Bolt App에 모든 핸들러를 등록."""
 
-    # ---- 메시지 이벤트: 스레드 답글 → 피드백 ----
+    # ---- 메시지 이벤트: 스레드 답글 → 피드백 + 메트릭 ----
     @app.event("message")
     def handle_message(event, client, logger):
         if event.get("subtype") == "bot_message":
@@ -31,10 +33,16 @@ def register(app: App) -> None:
         if not answer:
             return
 
+        response_minutes = max(
+            1, int((datetime.utcnow() - session.created_at).total_seconds() / 60)
+        )
+
         try:
-            feedback = exercises.generate_feedback_for_session(session, answer)
+            feedback, metric = exercises.generate_feedback_and_metric(
+                session, answer, response_minutes
+            )
         except Exception as e:
-            logger.exception("피드백 생성 실패")
+            logger.exception("피드백/메트릭 생성 실패")
             client.chat_postMessage(
                 channel=event["channel"],
                 thread_ts=thread_ts,
@@ -48,6 +56,7 @@ def register(app: App) -> None:
                     page_id=session.notion_page_id,
                     answer=answer,
                     feedback=feedback,
+                    metric=metric,
                 )
                 notion_client.mark_completed(page_id=session.notion_page_id)
             except notion_client.NotionAPIError as e:
@@ -55,13 +64,13 @@ def register(app: App) -> None:
                 storage.queue_notion_sync(
                     session.id,
                     "append_and_complete",
-                    {"answer": answer, "feedback": feedback},
+                    {"answer": answer, "feedback": feedback, "metric": metric},
                 )
         else:
             storage.queue_notion_sync(
                 session.id,
                 "append_and_complete",
-                {"answer": answer, "feedback": feedback},
+                {"answer": answer, "feedback": feedback, "metric": metric},
             )
 
         storage.save_answer_and_feedback(
@@ -71,7 +80,7 @@ def register(app: App) -> None:
         client.chat_postMessage(
             channel=event["channel"],
             thread_ts=thread_ts,
-            text=f"💬 {feedback}\n\n✅ 노션에 저장됨",
+            text=f"💬 {feedback}\n\n📊 {metric}\n\n✅ 노션에 저장됨",
         )
 
     # ---- 슬래시 커맨드 ----

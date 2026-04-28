@@ -1,4 +1,4 @@
-"""Anthropic SDK 래퍼 — 운동 생성과 피드백."""
+"""Anthropic SDK 래퍼 — 운동 생성 / 피드백 / 메트릭."""
 from __future__ import annotations
 
 from typing import Optional
@@ -7,6 +7,16 @@ from anthropic import Anthropic
 
 from . import config, storage
 from .models import ExerciseType
+
+
+_METRIC_HINTS = {
+    "mental_math": "5문제 중 정답 개수 (예: '정답 4/5')",
+    "logic_deduction": "정답 여부 (예: '정답' 또는 '오답')",
+    "memory": "회상 항목 정확도 (예: '회상 10/12')",
+    "pattern_visual": "정답·규칙 맞춤 여부 (예: '정답·규칙 적중' 또는 '오답')",
+    "verbal_fluency": "떠올린 단어 개수 (예: '단어 18개')",
+    "free_writing": "답변 항목 개수 (예: '답 8개')",
+}
 
 
 class ClaudeClient:
@@ -44,12 +54,6 @@ class ClaudeClient:
         user = ex.generation_prompt.replace("{recent_summaries}", recent_str)
         return self._call(ex.system_prompt, user, max_tokens=1024)
 
-    def generate_weekly_review(
-        self, ex: ExerciseType, weekly_context: str
-    ) -> str:
-        user = ex.generation_prompt.replace("{weekly_context}", weekly_context)
-        return self._call(ex.system_prompt, user, max_tokens=1024)
-
     def generate_feedback(
         self, ex: ExerciseType, exercise_content: str, answer: str
     ) -> str:
@@ -59,6 +63,26 @@ class ClaudeClient:
             f"=== Yiz의 답변 ===\n{answer}"
         )
         return self._call(ex.system_prompt, user, max_tokens=512)
+
+    def generate_metric(
+        self,
+        ex: ExerciseType,
+        exercise_content: str,
+        answer: str,
+        response_minutes: int,
+    ) -> str:
+        """운동별 정량 메트릭 한 줄 + 응답 시간."""
+        hint = _METRIC_HINTS.get(ex.type, "주요 수치 한 가지")
+        user = (
+            f"운동 내용:\n{exercise_content}\n\n"
+            f"답변:\n{answer}\n\n"
+            f"이 답변에서 다음 메트릭을 한 줄로만 출력해라.\n"
+            f"메트릭: {hint}\n"
+            f"규칙: 다른 텍스트·설명·이모지 없이 한 줄. 예시 형식 그대로."
+        )
+        metric = self._call(ex.system_prompt, user, max_tokens=50)
+        first_line = metric.strip().split("\n")[0].strip()
+        return f"{first_line} · 응답 {response_minutes}분"
 
 
 claude = ClaudeClient()

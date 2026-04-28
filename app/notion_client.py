@@ -119,25 +119,25 @@ def create_task(
 
 
 def append_answer_and_feedback(
-    *, page_id: str, answer: str, feedback: str
+    *, page_id: str, answer: str, feedback: str, metric: Optional[str] = None
 ) -> None:
-    """답변/피드백 헤더와 본문을 페이지 끝에 append."""
-    blocks = (
-        [{
+    """답변/피드백/메트릭 헤더와 본문을 페이지 끝에 append."""
+    def _heading(text: str) -> dict[str, Any]:
+        return {
             "object": "block", "type": "heading_2",
             "heading_2": {"rich_text": [
-                {"type": "text", "text": {"content": "✏️ 내 답변"}}
+                {"type": "text", "text": {"content": text}}
             ]},
-        }]
+        }
+
+    blocks: list[dict[str, Any]] = (
+        [_heading("✏️ 내 답변")]
         + _markdown_to_blocks(answer)
-        + [{
-            "object": "block", "type": "heading_2",
-            "heading_2": {"rich_text": [
-                {"type": "text", "text": {"content": "💬 피드백"}}
-            ]},
-        }]
+        + [_heading("💬 피드백")]
         + _markdown_to_blocks(feedback)
     )
+    if metric:
+        blocks += [_heading("📊 메트릭")] + _markdown_to_blocks(metric)
     try:
         _notion().blocks.children.append(block_id=page_id, children=blocks)
     except APIResponseError as e:
