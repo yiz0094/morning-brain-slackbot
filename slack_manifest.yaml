@@ -1,0 +1,48 @@
+display_information:
+  name: 모닝 브레인
+  description: 평일 아침 9시 10분 뇌 훈련 코치
+  background_color: "#2c2d30"
+features:
+  bot_user:
+    display_name: 모닝 브레인
+    always_online: true
+  slash_commands:
+    - command: /brain-skip
+      url: https://YOUR-RAILWAY-DOMAIN/slack/commands
+      description: 오늘 운동 건너뛰기
+      should_escape: false
+    - command: /brain-streak
+      url: https://YOUR-RAILWAY-DOMAIN/slack/commands
+      description: 연속 평일 일수와 최근 14평일 기록
+      should_escape: false
+    - command: /brain-history
+      url: https://YOUR-RAILWAY-DOMAIN/slack/commands
+      description: 최근 운동 5개 노션 링크
+      usage_hint: "[운동타입]"
+      should_escape: false
+    - command: /brain-now
+      url: https://YOUR-RAILWAY-DOMAIN/slack/commands
+      description: 즉시 새 운동 트리거 (테스트용)
+      should_escape: false
+oauth_config:
+  scopes:
+    bot:
+      - chat:write
+      - channels:read
+      - channels:history
+      - groups:read
+      - groups:history
+      - im:write
+      - commands
+      - users:read
+settings:
+  event_subscriptions:
+    request_url: https://YOUR-RAILWAY-DOMAIN/slack/events
+    bot_events:
+      - message.channels
+      - message.groups
+  interactivity:
+    is_enabled: false
+  org_deploy_enabled: false
+  socket_mode_enabled: false
+  token_rotation_enabled: false
