@@ -36,20 +36,20 @@ async def lifespan(app: FastAPI):
         log.info("Service stopped.")
 
 
-api = FastAPI(lifespan=lifespan)
+app =FastAPI(lifespan=lifespan)
 
 
-@api.post("/slack/events")
+@app.post("/slack/events")
 async def slack_events(req: Request):
     return await bolt_handler.handle(req)
 
 
-@api.post("/slack/commands")
+@app.post("/slack/commands")
 async def slack_commands(req: Request):
     return await bolt_handler.handle(req)
 
 
-@api.get("/health")
+@app.get("/health")
 def health():
     return {
         "status": "ok",
