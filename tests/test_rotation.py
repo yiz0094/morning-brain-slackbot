@@ -74,21 +74,21 @@ class TestThreeWeekCycle:
 
         # Week 1
         assert plan[0] == (0, "mental_math")
-        assert plan[1] == (1, "reading_summary")
-        assert plan[2] == (2, "strategy_case")
-        assert plan[3] == (3, "memory")
+        assert plan[1] == (1, "logic_deduction")
+        assert plan[2] == (2, "memory")
+        assert plan[3] == (3, "pattern_visual")
         assert plan[4] == (4, "weekly_review")
 
         # Week 2
-        assert plan[5] == (0, "free_writing")
-        assert plan[6] == (1, "vocabulary_en")
+        assert plan[5] == (0, "verbal_fluency")
+        assert plan[6] == (1, "free_writing")
         assert plan[7] == (2, "mental_math")
-        assert plan[8] == (3, "reading_summary")
+        assert plan[8] == (3, "logic_deduction")
         assert plan[9] == (4, "weekly_review")
 
         # Week 3
-        assert plan[10] == (0, "strategy_case")
-        assert plan[11] == (1, "memory")
-        assert plan[12] == (2, "free_writing")
-        assert plan[13] == (3, "vocabulary_en")
+        assert plan[10] == (0, "memory")
+        assert plan[11] == (1, "pattern_visual")
+        assert plan[12] == (2, "verbal_fluency")
+        assert plan[13] == (3, "free_writing")
         assert plan[14] == (4, "weekly_review")

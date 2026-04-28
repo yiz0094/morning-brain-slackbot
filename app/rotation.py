@@ -12,11 +12,11 @@ from datetime import date
 
 WEEKDAY_POOL = [
     "mental_math",
-    "reading_summary",
-    "strategy_case",
+    "logic_deduction",
     "memory",
+    "pattern_visual",
+    "verbal_fluency",
     "free_writing",
-    "vocabulary_en",
 ]
 
 WEEKLY_REVIEW = "weekly_review"
